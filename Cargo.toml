@@ -2,5 +2,10 @@
 name = "ackr"
 version = "1.0.0"
 authors = ["Daniel Fagnan <dnfagnan@gmail.com>"]
+documentation = "https://github.com/thehydroimpulse/ackr"
+homepage = "https://github.com/thehydroimpulse/ackr"
+repository = "https://github.com/thehydroimpulse/ackr"
+license = "MIT"
+description = "Storm acking algorithm in Rust"
 
 [dependencies]
