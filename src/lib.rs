@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
-pub struct Dag(u64);
+pub struct Source(u64);
 
-impl Dag {
+impl Source {
     pub fn to_u64(&self) -> u64 {
         self.0
     }
@@ -43,7 +43,7 @@ impl Task {
 /// once again be XORed. Once all tuples are acked/completed, the ack value will be 0.
 #[derive(PartialEq, Eq, Debug)]
 pub struct Ackr {
-    buckets: HashMap<Dag, (Task, Tuple)>
+    buckets: HashMap<Source, (Task, Tuple)>
 }
 
 impl Ackr {
@@ -54,21 +54,21 @@ impl Ackr {
         }
     }
 
-    /// Insert a new bucket entry with the Dag id as the initial ack value.
-    pub fn insert(&mut self, dag_id: Dag, task_id: Task) {
-        self.buckets.insert(dag_id, (task_id, dag_id.as_tuple()));
+    /// Insert a new bucket entry with the Source id as the initial ack value.
+    pub fn insert(&mut self, source_id: Source, task_id: Task) {
+        self.buckets.insert(source_id, (task_id, source_id.as_tuple()));
     }
 
-    /// Add a tuple to the Dag's ack value. This is essentially just the first
+    /// Add a tuple to the Source's ack value. This is essentially just the first
     /// XOR.
-    pub fn add_tuple(&mut self, dag_id: Dag, tuple_id: Tuple) {
-        self.ack(dag_id, tuple_id);
+    pub fn add_tuple(&mut self, source_id: Source, tuple_id: Tuple) {
+        self.ack(source_id, tuple_id);
     }
 
-    /// XOR the ack value for a given Dag and the result is the new ack value.
-    /// Acking once adds the tuple to the Dag, acking it twice removes it.
-    pub fn ack(&mut self, dag_id: Dag, tuple_id: Tuple) -> Option<()> {
-        if let Some(&mut (_, Tuple(ref mut x))) = self.buckets.get_mut(&dag_id) {
+    /// XOR the ack value for a given Source and the result is the new ack value.
+    /// Acking once adds the tuple to the Source, acking it twice removes it.
+    pub fn ack(&mut self, source_id: Source, tuple_id: Tuple) -> Option<()> {
+        if let Some(&mut (_, Tuple(ref mut x))) = self.buckets.get_mut(&source_id) {
             *x ^= tuple_id.to_u64();
 
             Some(())
@@ -77,12 +77,12 @@ impl Ackr {
         }
     }
 
-    pub fn get(&mut self, dag_id: Dag) -> Tuple {
-        self.buckets[&dag_id].1
+    pub fn get(&mut self, source_id: Source) -> Tuple {
+        self.buckets[&source_id].1
     }
 
-    pub fn has_completed(&mut self, dag_id: Dag) -> bool {
-        self.buckets[&dag_id].1.to_u64() == 0
+    pub fn has_completed(&mut self, source_id: Source) -> bool {
+        self.buckets[&source_id].1.to_u64() == 0
     }
 }
 
@@ -93,30 +93,30 @@ mod test {
     #[test]
     fn new() {
         let mut ackr = Ackr::new();
-        ackr.insert(Dag(0x01), Task(0x02));
-        assert_eq!(ackr.get(Dag(0x01)), Tuple(0x01));
+        ackr.insert(Source(0x01), Task(0x02));
+        assert_eq!(ackr.get(Source(0x01)), Tuple(0x01));
     }
 
     #[test]
     fn ack() {
         let mut ackr = Ackr::new();
-        ackr.insert(Dag(0x01), Task(0x01));
-        ackr.ack(Dag(0x01), Tuple(0x01));
-        assert_eq!(ackr.has_completed(Dag(0x01)), true);
+        ackr.insert(Source(0x01), Task(0x01));
+        ackr.ack(Source(0x01), Tuple(0x01));
+        assert_eq!(ackr.has_completed(Source(0x01)), true);
     }
 
     #[test]
     fn ack_2() {
         let mut ackr = Ackr::new();
 
-        // Dag id, task id
-        ackr.insert(Dag(0x01), Task(1));
+        // Source id, task id
+        ackr.insert(Source(0x01), Task(1));
 
-        ackr.add_tuple(Dag(0x01), Tuple(0x03));
-        ackr.add_tuple(Dag(0x01), Tuple(0x04));
-        ackr.ack(Dag(0x01), Tuple(0x04));
-        ackr.ack(Dag(0x01), Tuple(0x03));
-        assert_eq!(ackr.get(Dag(0x01)), Tuple(0x01));
-        assert_eq!(ackr.has_completed(Dag(0x01)), false);
+        ackr.add_tuple(Source(0x01), Tuple(0x03));
+        ackr.add_tuple(Source(0x01), Tuple(0x04));
+        ackr.ack(Source(0x01), Tuple(0x04));
+        ackr.ack(Source(0x01), Tuple(0x03));
+        assert_eq!(ackr.get(Source(0x01)), Tuple(0x01));
+        assert_eq!(ackr.has_completed(Source(0x01)), false);
     }
 }
